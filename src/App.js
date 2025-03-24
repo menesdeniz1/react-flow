@@ -4,6 +4,9 @@ import ReactFlow, {
   useEdgesState,
   addEdge,
   MiniMap,
+  Controls,
+  Handle,
+  Position
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import CustomNode from './CustomNode';
@@ -15,6 +18,29 @@ const initialNodes = [
     type: 'custom',
     position: { x: 250, y: 5 },
     data: { label: 'Custom Node' },
+  },
+  {
+    id: 'subflow-node',
+    type: 'default',
+    position: { x: 400, y: 150 },
+    data: { label: 'Subflow' },
+    style: {
+      background: '#ffcc00',
+      padding: '10px',
+      borderRadius: '5px',
+      width: 300,  // Add fixed width for parent
+      height: 200, // Add fixed height for parent
+    },
+    className: 'parent-node', // Add class for styling
+  },
+  // Add an initial child node
+  {
+    id: 'child-1',
+    type: 'custom',
+    position: { x: 50, y: 50 },
+    data: { label: 'Child Node 1' },
+    parentNode: 'subflow-node',
+    extent: 'parent',
   }
 ];
 
@@ -34,16 +60,19 @@ function App() {
 
   const onAdd = useCallback(() => {
     const newNode = {
-      id: (nodes.length + 1).toString(),
+      id: `node-${nodes.length + 1}`,
       type: 'custom',
-      position: { x: Math.random() * 400, y: Math.random() * 400 },
+      // Position is relative to parent node
+      position: { x: Math.random() * 200, y: Math.random() * 100 },
       data: { 
-        label: `Custom Node ${nodes.length + 1}`,
-        width: Math.random() * 100 + 100,
-        height: Math.random() * 50 + 50,
+        label: `Child Node ${nodes.length + 1}`,
+        width: 100,
+        height: 50,
         color: '#ff0072',
-        background: '#ffcc00'
+        background: '#ffffff'
       },
+      parentNode: 'subflow-node', // Set parent node
+      extent: 'parent', // Constrain to parent boundaries
     };
     setNodes((nds) => [...nds, newNode]);
   }, [nodes, setNodes]);
@@ -75,8 +104,26 @@ function App() {
     console.log('Seçilenler:', elements);
   }, []);
 
+  // Add CSS to your stylesheet
+  const styles = {
+    parentNode: {
+      border: '2px solid #000',
+      borderRadius: '5px',
+      padding: '20px',
+    },
+  };
+
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
+      <style>
+        {`
+          .parent-node {
+            border: 2px solid #000;
+            border-radius: 5px;
+            padding: 20px;
+          }
+        `}
+      </style>
       <button onClick={onAdd} style={{ position: 'absolute', zIndex: 10 }}>
         Yeni Özel Node Ekle
       </button>
@@ -97,13 +144,14 @@ function App() {
         edgeTypes={edgeTypes}
         onSelectionChange={onSelectionChange}
         selectionMode="partial"
+        fitView
       >
-        {/* MiniMap buraya taşındı */}
         <MiniMap
           nodeColor={(node) => (node.type === 'custom' ? '#ff0072' : '#1a192b')}
           nodeStrokeWidth={3}
           style={{ height: 100 }}
         />
+        <Controls />
       </ReactFlow>
     </div>
   );
