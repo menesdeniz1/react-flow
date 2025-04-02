@@ -1,64 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
-import { motion } from 'framer-motion';
-import { Tooltip } from 'react-tooltip';
+import { Resizable } from 're-resizable';
+import 'react-resizable/css/styles.css';
 
-const CustomNode = ({ data, id }) => {
-  const [label, setLabel] = useState(data.label);
-  const [isEditing, setIsEditing] = useState(false);
+const CustomNode = ({ id, data, isConnectable }) => {
+  const [size, setSize] = useState({
+    width: data.width || 150,
+    height: data.height || 100
+  });
 
-  const handleDoubleClick = () => setIsEditing(true);
+  const handleResize = useCallback((e, direction, ref, delta) => {
+    const newWidth = size.width + delta.width;
+    const newHeight = size.height + delta.height;
 
-  const handleChange = (e) => setLabel(e.target.value);
+    const updatedSize = {
+      width: Math.max(100, Math.min(400, newWidth)),
+      height: Math.max(50, Math.min(300, newHeight))
+    };
 
-  const handleBlur = () => {
-    setIsEditing(false);
-    data.label = label; // Yeni etiketi node'a aktar
+    setSize(updatedSize);
+
+    if (data.onSizeChange) {
+      data.onSizeChange(updatedSize);
+    }
+  }, [size, data]);
+
+  const containerStyle = {
+    border: `2px solid ${data.color || '#1a192b'}`,
+    borderRadius: '5px',
+    background: data.background || '#ffffff',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'default', // sol tık için önemli
+    width: '100%',
+    height: '100%'
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onDoubleClick={handleDoubleClick}
-      style={{
-        width: data.width || 150,
-        height: data.height || 50,
-        padding: 10,
-        border: `2px solid ${data.color || '#1a192b'}`,
-        borderRadius: 5,
-        background: data.background || '#ffcc00',
-        color: '#1a192b',
-        fontSize: 14,
-        boxShadow: '2px 2px 8px rgba(0,0,0,0.3)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
+    <Resizable
+      size={size}
+      onResizeStop={handleResize}
+      minWidth={100}
+      minHeight={50}
+      maxWidth={400}
+      maxHeight={300}
+      enable={{
+        top: true,
+        right: true,
+        bottom: true,
+        left: true,
+        topRight: true,
+        bottomRight: true,
+        bottomLeft: true,
+        topLeft: true
       }}
+      style={{ position: 'relative' }} // Resizable dış stil
     >
-      {isEditing ? (
-        <input
-          value={label}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          autoFocus
-          style={{
-            width: '100%',
-            border: 'none',
-            outline: 'none',
-            background: 'transparent',
-            fontSize: 14,
-            color: '#1a192b',
-          }}
+      <div style={containerStyle}>
+        <Handle
+          type="target"
+          position={Position.Left}
+          isConnectable={isConnectable}
         />
-      ) : (
-        label
-      )}
 
-      <Handle type="source" position={Position.Right} />
-      <Handle type="target" position={Position.Left} />
-    </motion.div>
+        <div style={{ userSelect: 'none' }}>{data.label}</div>
+
+        <Handle
+          type="source"
+          position={Position.Right}
+          isConnectable={isConnectable}
+        />
+      </div>
+    </Resizable>
   );
 };
 
